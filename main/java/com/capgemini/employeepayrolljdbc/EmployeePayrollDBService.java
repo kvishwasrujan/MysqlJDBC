@@ -8,19 +8,21 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * @author vishw
  *
  */
 public class EmployeePayrollDBService {
-	private PreparedStatement employeePayrollDataStatement;
-	private static EmployeePayrollDBService employeePayrollDBService;
-
 	public enum StatementType {
 		PREPARED_STATEMENT, STATEMENT
 	}
+
+	private PreparedStatement employeePayrollDataStatement;
+	private static EmployeePayrollDBService employeePayrollDBService;
 
 	private EmployeePayrollDBService() {
 
@@ -34,15 +36,17 @@ public class EmployeePayrollDBService {
 
 	public List<EmployeePayrollData> readData() {
 		String sql = "SELECT * FROM employee_payroll_2;";
-		List<EmployeePayrollData> employeePayrollList = new ArrayList<EmployeePayrollData>();
-		try (Connection connection = this.getConnection();) {
-			Statement statement = connection.createStatement();
-			ResultSet resultSet = statement.executeQuery(sql);
-			employeePayrollList = this.getEmployeePayrollData(resultSet);
+		return this.getEmployeePayrollDataUsingSQLQuery(sql);
+	}
+
+	private void preparedStatementForEmployeeData() {
+		try {
+			Connection connection = this.getConnection();
+			String sql = "Select * from employee_payroll_2 WHERE name = ?";
+			employeePayrollDataStatement = connection.prepareStatement(sql);
 		} catch (SQLException e) {
 			e.printStackTrace();
 		}
-		return employeePayrollList;
 	}
 
 	public List<EmployeePayrollData> getEmployeePayrollData(String name) {
@@ -52,6 +56,19 @@ public class EmployeePayrollDBService {
 		try {
 			employeePayrollDataStatement.setString(1, name);
 			ResultSet resultSet = employeePayrollDataStatement.executeQuery();
+			employeePayrollList = this.getEmployeePayrollData(resultSet);
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
+		return employeePayrollList;
+
+	}
+
+	public List<EmployeePayrollData> getEmployeePayrollDataUsingSQLQuery(String sql) {
+		List<EmployeePayrollData> employeePayrollList = new ArrayList<EmployeePayrollData>();
+		try (Connection connection = this.getConnection()) {
+			Statement statement = connection.createStatement();
+			ResultSet resultSet = statement.executeQuery(sql);
 			employeePayrollList = this.getEmployeePayrollData(resultSet);
 		} catch (SQLException e) {
 			e.printStackTrace();
@@ -73,17 +90,6 @@ public class EmployeePayrollDBService {
 			e.printStackTrace();
 		}
 		return employeePayrollList;
-	}
-
-	private void preparedStatementForEmployeeData() {
-		try {
-			Connection connection = this.getConnection();
-			String sql = "Select * from employee_payroll_2 WHERE name = ?";
-			employeePayrollDataStatement = connection.prepareStatement(sql);
-		} catch (SQLException e) {
-			e.printStackTrace();
-		}
-
 	}
 
 	public int updateEmployeeData(String name, double salary, StatementType type) {
@@ -123,25 +129,28 @@ public class EmployeePayrollDBService {
 
 	public List<EmployeePayrollData> getEmployeesInGivenDateRangeDB(String date1, String date2) {
 		String sql = String.format("SELECT * FROM employee_payroll_2 where start between '%s' AND '%s';", date1, date2);
-		List<EmployeePayrollData> employeePayrollList = new ArrayList<EmployeePayrollData>();
-		try (Connection connection = this.getConnection();) {
+		return this.getEmployeePayrollDataUsingSQLQuery(sql);
+	}
+
+	public Map<String, Double> getAverageSalaryByGender() {
+		String sql = "SELECT gender,AVG(salary) FROM employee_payroll_2 GROUP BY gender;";
+		Map<String, Double> genderToAvgSalaryMap = new HashMap<String, Double>();
+		try (Connection connection = this.getConnection()) {
 			Statement statement = connection.createStatement();
 			ResultSet resultSet = statement.executeQuery(sql);
 			while (resultSet.next()) {
-				int id = resultSet.getInt("id");
-				String name = resultSet.getString("name");
-				double salary = resultSet.getDouble("salary");
-				LocalDate startDate = resultSet.getDate("start").toLocalDate();
-				employeePayrollList.add(new EmployeePayrollData(id, name, salary, startDate));
+				String gender = resultSet.getString("gender");
+				double salary = resultSet.getDouble("AVG(salary)");
+				genderToAvgSalaryMap.put(gender, salary);
 			}
 		} catch (SQLException e) {
 			e.printStackTrace();
 		}
-		return employeePayrollList;
+		return genderToAvgSalaryMap;
 	}
 
 	private Connection getConnection() throws SQLException {
-		String jdbcURL = "jdbc:mysql://localhost:3306/payroll_service_jdbc";
+		String jdbcURL = "jdbc:mysql://localhost:3306/payroll_service_jdbc?useSSL=false";
 		String userName = "root";
 		String password = "root";
 		Connection connection;

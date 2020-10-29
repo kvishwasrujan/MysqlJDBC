@@ -6,6 +6,7 @@ import org.junit.Test;
 import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 
 import org.junit.Test;
 
@@ -66,5 +67,22 @@ public class EmployeePayrollServiceTest {
 		List<EmployeePayrollData> employeeDataInGivenDateRange = employeePayrollService
 				.getEmployeesInDateRange("2018-01-01", "2019-11-15");
 		assertEquals(2, employeeDataInGivenDateRange.size());
+	}
+
+	@Test
+	public void givenPayrollData_WhenAvgSalaryRetrivedByGender_ShouldReturnProperValue() {
+		EmployeePayrollService employeePayrollService = new EmployeePayrollService();
+		Map<String, Double> employeePayrollData = employeePayrollService.readAverageSalaryByGender(IOService.DB_IO);
+		Assert.assertEquals(2, employeePayrollData.size());
+	}
+
+	@Test
+	public void givenPayrollData_WhenAverageSalaryRetrievedByGender_ShouldReturnProperValue() {
+		EmployeePayrollService employeePayrollService = new EmployeePayrollService();
+		employeePayrollService.readData(IOService.DB_IO);
+		Map<String, Double> averageSalaryByGender = employeePayrollService.readAverageSalaryByGender(IOService.DB_IO);
+		System.out.println(averageSalaryByGender);
+		assertTrue(
+				averageSalaryByGender.get("M").equals(2000000.00) && averageSalaryByGender.get("F").equals(3000000.00));
 	}
 }

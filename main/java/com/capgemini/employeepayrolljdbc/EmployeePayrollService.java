@@ -2,6 +2,7 @@ package com.capgemini.employeepayrolljdbc;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Scanner;
 
 import com.capgemini.employeepayrolljdbc.EmployeePayrollDBService.StatementType;
@@ -35,7 +36,6 @@ public class EmployeePayrollService {
 		employeePayrollService.readEmployeeData(consoleInputReader);
 		employeePayrollService.writeEmployeeData(IOService.CONSOLE_IO);
 	}
-
 	public void readEmployeeData(Scanner consoleInputReader) {
 		System.out.println("Enter employee ID : ");
 		int id = Integer.parseInt(consoleInputReader.nextLine());
@@ -46,6 +46,9 @@ public class EmployeePayrollService {
 		employeePayrollList.add(new EmployeePayrollData(id, name, salary));
 	}
 
+	/**
+	 * Write payroll data to console
+	 */
 	public void writeEmployeeData(IOService ioService) {
 		if (ioService.equals(IOService.CONSOLE_IO))
 			System.out.println("Writing Employee Payroll Data to Console\n" + employeePayrollList);
@@ -53,54 +56,60 @@ public class EmployeePayrollService {
 			new EmployeePayrollFileIOService().writeData(employeePayrollList);
 	}
 
+	/**
+	 * @param ioService Print Data
+	 */
 	public void printData(IOService ioService) {
 		new EmployeePayrollFileIOService().printData();
 	}
-
 	public long countEntries(IOService ioService) {
 		if (ioService.equals(IOService.FILE_IO))
 			return new EmployeePayrollFileIOService().countEntries();
 		return 0;
 	}
-
 	public List<EmployeePayrollData> readData(IOService ioService) {
-		if (ioService.equals(IOService.FILE_IO))
-			return new EmployeePayrollFileIOService().readData();
-		else if (ioService.equals(IOService.DB_IO)) {
+		if(ioService.equals(IOService.FILE_IO))
+			 return new EmployeePayrollFileIOService().readData();
+		else if(ioService.equals(IOService.DB_IO)) {
 			employeePayrollList = employeePayrollDBService.readData();
-			return employeePayrollList;
-		} else
+			 return employeePayrollList;
+		}
+		else
 			return null;
 	}
-
-	public void updateEmployeeSalary(String name, double salary, StatementType type) throws EmployeePayrollException {
-		int result = employeePayrollDBService.updateEmployeeData(name, salary, type);
+	public void updateEmployeeSalary(String name, double salary,StatementType type) throws EmployeePayrollException {
+		int result = employeePayrollDBService.updateEmployeeData(name,salary,type);
 		EmployeePayrollData employeePayrollData = null;
-		if (result == 0)
+		if(result == 0)
 			throw new EmployeePayrollException(ExceptionType.UPDATE_FAIL, "Update Failed");
-		else
-			employeePayrollData = this.getEmployeePayrollData(name);
-		if (employeePayrollData != null) {
+		else 
+			 employeePayrollData = this.getEmployeePayrollData(name);
+		if(employeePayrollData!=null) {
 			employeePayrollData.salary = salary;
 		}
 	}
-
 	private EmployeePayrollData getEmployeePayrollData(String name) {
 		EmployeePayrollData employeePayrollData = this.employeePayrollList.stream()
-				.filter(employee -> employee.name.equals(name)).findFirst().orElse(null);
+				.filter(employee->employee.name.equals(name))
+				.findFirst()
+				.orElse(null);
 		return employeePayrollData;
 	}
-
 	public boolean checkEmployeePayrollInSyncWithDB(String name) {
 		List<EmployeePayrollData> checkList = employeePayrollDBService.getEmployeePayrollData(name);
 		return checkList.get(0).equals(getEmployeePayrollData(name));
-
+		
 	}
 
 	public List<EmployeePayrollData> getEmployeesInDateRange(String date1, String date2) {
-		List<EmployeePayrollData> employeesInGivenDateRangeList = employeePayrollDBService
-				.getEmployeesInGivenDateRangeDB(date1, date2);
+		List<EmployeePayrollData> employeesInGivenDateRangeList = employeePayrollDBService.getEmployeesInGivenDateRangeDB(date1,date2);
 		return employeesInGivenDateRangeList;
 	}
+
+	public Map<String, Double> readAverageSalaryByGender(IOService ioService) {
+		if(ioService.equals(IOService.DB_IO)) 
+			return employeePayrollDBService.getAverageSalaryByGender();
+		return null;
+}
 
 }
