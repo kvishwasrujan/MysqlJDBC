@@ -18,6 +18,10 @@ public class EmployeePayrollDBService {
 	private PreparedStatement employeePayrollDataStatement;
 	private static EmployeePayrollDBService employeePayrollDBService;
 
+	public enum StatementType {
+		PREPARED_STATEMENT, STATEMENT
+	}
+
 	private EmployeePayrollDBService() {
 
 	}
@@ -82,8 +86,15 @@ public class EmployeePayrollDBService {
 
 	}
 
-	public int updateEmployeeData(String name, double salary) {
-		return this.updateDataUsingStatement(name, salary);
+	public int updateEmployeeData(String name, double salary, StatementType type) {
+		switch (type) {
+		case STATEMENT:
+			return this.updateDataUsingStatement(name, salary);
+		case PREPARED_STATEMENT:
+			return this.updateDataUsingPreparedStatement(name, salary);
+		default:
+			return 0;
+		}
 	}
 
 	private int updateDataUsingStatement(String name, double salary) {
@@ -91,6 +102,19 @@ public class EmployeePayrollDBService {
 		try (Connection connection = this.getConnection();) {
 			Statement statement = connection.createStatement();
 			return statement.executeUpdate(sql);
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
+		return 0;
+	}
+
+	private int updateDataUsingPreparedStatement(String name, double salary) {
+		String sql = "UPDATE employee_payroll_2 SET salary = ? WHERE NAME = ?";
+		try (Connection connection = this.getConnection();) {
+			PreparedStatement preparedStatementUpdate = connection.prepareStatement(sql);
+			preparedStatementUpdate.setDouble(1, salary);
+			preparedStatementUpdate.setString(2, name);
+			return preparedStatementUpdate.executeUpdate();
 		} catch (SQLException e) {
 			e.printStackTrace();
 		}

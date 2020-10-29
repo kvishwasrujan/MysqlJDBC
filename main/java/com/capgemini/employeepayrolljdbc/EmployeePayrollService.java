@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
 
+import com.capgemini.employeepayrolljdbc.EmployeePayrollDBService.StatementType;
 import com.capgemini.employeepayrolljdbc.EmployeePayrollException.ExceptionType;
 
 /**
@@ -72,8 +73,8 @@ public class EmployeePayrollService {
 			return null;
 	}
 
-	public void updateEmployeeSalary(String name, double salary) throws EmployeePayrollException {
-		int result = employeePayrollDBService.updateEmployeeData(name, salary);
+	public void updateEmployeeSalary(String name, double salary, StatementType type) throws EmployeePayrollException {
+		int result = employeePayrollDBService.updateEmployeeData(name, salary, type);
 		EmployeePayrollData employeePayrollData = null;
 		if (result == 0)
 			throw new EmployeePayrollException(ExceptionType.UPDATE_FAIL, "Update Failed");
