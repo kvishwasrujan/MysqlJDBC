@@ -18,11 +18,17 @@ public class EmployeePayrollService {
 		CONSOLE_IO, FILE_IO, DB_IO, REST_IO
 	}
 
+	public enum NormalisationType {
+		NORMALISED, DENORMALISED
+	}
+
 	public List<EmployeePayrollData> employeePayrollList;
 	private EmployeePayrollDBService employeePayrollDBService;
+	private EmployeePayrollDBServiceNormalised employeePayrollDBServiceNormalised;
 
 	public EmployeePayrollService() {
 		employeePayrollDBService = EmployeePayrollDBService.getInstance();
+		employeePayrollDBServiceNormalised = EmployeePayrollDBServiceNormalised.getInstance();
 	}
 
 	public EmployeePayrollService(List<EmployeePayrollData> employeePayrollList) {
@@ -82,11 +88,15 @@ public class EmployeePayrollService {
 	 * @param ioService
 	 * @return Employee Payroll Data List
 	 */
-	public List<EmployeePayrollData> readData(IOService ioService) {
+	public List<EmployeePayrollData> readData(IOService ioService, NormalisationType normalisationType) {
 		if (ioService.equals(IOService.FILE_IO))
 			return new EmployeePayrollFileIOService().readData();
 		else if (ioService.equals(IOService.DB_IO)) {
-			employeePayrollList = employeePayrollDBService.readData();
+			if (normalisationType.equals(NormalisationType.DENORMALISED)) {
+				employeePayrollList = employeePayrollDBService.readData();
+			} else if (normalisationType.equals(NormalisationType.NORMALISED)) {
+				employeePayrollList = employeePayrollDBServiceNormalised.readData();
+			}
 			return employeePayrollList;
 		} else
 			return null;
@@ -97,8 +107,14 @@ public class EmployeePayrollService {
 	 * @param salary
 	 * @throws EmployeePayrollException
 	 */
-	public void updateEmployeeSalary(String name, double salary, StatementType type) throws EmployeePayrollException {
-		int result = employeePayrollDBService.updateEmployeeData(name, salary, type);
+	public void updateEmployeeSalary(String name, double salary, StatementType type,
+			NormalisationType normalisationType) throws EmployeePayrollException {
+		int result = 0;
+		if (normalisationType.equals(NormalisationType.DENORMALISED)) {
+			result = employeePayrollDBService.updateEmployeeData(name, salary, type);
+		} else if (normalisationType.equals(NormalisationType.NORMALISED)) {
+			result = employeePayrollDBServiceNormalised.updateEmployeeData(name, salary, type);
+		}
 		EmployeePayrollData employeePayrollData = null;
 		if (result == 0)
 			throw new EmployeePayrollException(ExceptionType.UPDATE_FAIL, "Update Failed");
@@ -123,8 +139,12 @@ public class EmployeePayrollService {
 	 * @param name
 	 * @return true if data is in sync
 	 */
-	public boolean checkEmployeePayrollInSyncWithDB(String name) {
-		List<EmployeePayrollData> checkList = employeePayrollDBService.getEmployeePayrollData(name);
+	public boolean checkEmployeePayrollInSyncWithDB(String name, NormalisationType normalisationType) {
+		List<EmployeePayrollData> checkList = null;
+		if (normalisationType.equals(NormalisationType.DENORMALISED))
+			checkList = employeePayrollDBService.getEmployeePayrollData(name);
+		else if (normalisationType.equals(NormalisationType.NORMALISED))
+			checkList = employeePayrollDBServiceNormalised.getEmployeePayrollData(name);
 		return checkList.get(0).equals(getEmployeePayrollData(name));
 
 	}
